@@ -13,11 +13,11 @@ let connection: Connection;
 describe('Transaction', () => {
   beforeAll(async () => {
     connection = await createConnection('test-connection');
-    
+
     await connection.query('DROP TABLE IF EXISTS transactions');
     await connection.query('DROP TABLE IF EXISTS categories');
     await connection.query('DROP TABLE IF EXISTS migrations');
-    
+
     await connection.runMigrations();
   });
 
@@ -31,6 +31,31 @@ describe('Transaction', () => {
 
     await connection.close();
     await mainConnection.close();
+  });
+
+  it('should be able to create new transaction', async () => {
+    const transactionsRepository = getRepository(Transaction);
+
+    const response = await request(app).post('/transactions').send({
+      title: 'March Salary',
+      type: 'income',
+      value: 4000,
+      category: 'Salary',
+    });
+
+    const transaction = await transactionsRepository.findOne({
+      where: {
+        title: 'March Salary',
+      },
+    });
+
+    expect(transaction).toBeTruthy();
+
+    expect(response.body).toMatchObject(
+      expect.objectContaining({
+        id: expect.any(String),
+      }),
+    );
   });
 
   it('should be able to list transactions', async () => {
@@ -63,31 +88,6 @@ describe('Transaction', () => {
       outcome: 6000,
       total: 2000,
     });
-  });
-
-  it('should be able to create new transaction', async () => {
-    const transactionsRepository = getRepository(Transaction);
-
-    const response = await request(app).post('/transactions').send({
-      title: 'March Salary',
-      type: 'income',
-      value: 4000,
-      category: 'Salary',
-    });
-
-    const transaction = await transactionsRepository.findOne({
-      where: {
-        title: 'March Salary',
-      },
-    });
-
-    expect(transaction).toBeTruthy();
-
-    expect(response.body).toMatchObject(
-      expect.objectContaining({
-        id: expect.any(String),
-      }),
-    );
   });
 
   it('should create tags when inserting new transactions', async () => {
